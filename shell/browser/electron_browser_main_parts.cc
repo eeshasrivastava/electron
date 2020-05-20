@@ -71,6 +71,7 @@
 #include "ui/gtk/gtk_ui.h"
 #include "ui/gtk/gtk_ui_delegate.h"
 #include "ui/gtk/gtk_util.h"
+#include "ui/gtk/native_theme_gtk.h"
 #include "ui/gtk/x/gtk_ui_delegate_x11.h"
 #include "ui/views/linux_ui/linux_ui.h"
 #endif
@@ -375,10 +376,15 @@ void ElectronBrowserMainParts::ToolkitInitialized() {
   gtk_ui_delegate_ = std::make_unique<ui::GtkUiDelegateX11>(gfx::GetXDisplay());
   ui::GtkUiDelegate::SetInstance(gtk_ui_delegate_.get());
   views::LinuxUI::SetInstance(BuildGtkUi(ui::GtkUiDelegate::instance()));
-#endif
-
-#if defined(USE_AURA) && defined(USE_X11)
   views::LinuxUI::instance()->Initialize();
+
+  // Pass the dark theme information from GTK NativeTheme to Chrome NativeTheme.
+  // This is necessary to make nativeTheme API have correct default setting, and
+  // to make "prefers-color-scheme" media query work.
+  gtk::NativeThemeGtk* theme = gtk::NativeThemeGtk::instance();
+  bool is_dark = theme->ShouldUseDarkColors();
+  ui::NativeTheme::GetInstanceForNativeUi()->set_use_dark_colors(is_dark);
+  ui::NativeTheme::GetInstanceForWeb()->set_use_dark_colors(is_dark);
 #endif
 
 #if defined(USE_AURA)
